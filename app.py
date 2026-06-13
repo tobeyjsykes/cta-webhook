@@ -22,10 +22,10 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-IG_VERIFY_TOKEN = os.environ["IG_VERIFY_TOKEN"]
-IG_PAGE_ACCESS_TOKEN = os.environ["IG_PAGE_ACCESS_TOKEN"]
-NOTION_API_KEY = os.environ["NOTION_API_KEY"]
-NOTION_CTA_PAGE_ID = os.environ["NOTION_CTA_PAGE_ID"]
+IG_VERIFY_TOKEN = os.environ.get("IG_VERIFY_TOKEN", "")
+IG_PAGE_ACCESS_TOKEN = os.environ.get("IG_PAGE_ACCESS_TOKEN", "")
+NOTION_API_KEY = os.environ.get("NOTION_API_KEY", "")
+NOTION_CTA_PAGE_ID = os.environ.get("NOTION_CTA_PAGE_ID", "")
 NOTION_VERSION = "2022-06-28"
 
 GRAPH_API = "https://graph.instagram.com/v21.0"
@@ -123,6 +123,21 @@ def receive_webhook():
 @app.route("/", methods=["GET"])
 def health():
     return "CTA webhook is running", 200
+
+
+@app.route("/debug-env", methods=["GET"])
+def debug_env():
+    """
+    TEMPORARY: reports which expected env vars are set (true/false only,
+    never the values). Remove this route once things are working.
+    """
+    return {
+        "IG_VERIFY_TOKEN_set": bool(IG_VERIFY_TOKEN),
+        "IG_PAGE_ACCESS_TOKEN_set": bool(IG_PAGE_ACCESS_TOKEN),
+        "NOTION_API_KEY_set": bool(NOTION_API_KEY),
+        "NOTION_CTA_PAGE_ID_set": bool(NOTION_CTA_PAGE_ID),
+        "all_env_var_names": sorted(os.environ.keys()),
+    }, 200
 
 
 if __name__ == "__main__":
