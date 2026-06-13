@@ -124,22 +124,6 @@ def receive_webhook():
 def health():
     return "CTA webhook is running", 200
 
-
-@app.route("/debug-env", methods=["GET"])
-def debug_env():
-    """
-    TEMPORARY: reports which expected env vars are set (true/false only,
-    never the values). Remove this route once things are working.
-    """
-    return {
-        "IG_VERIFY_TOKEN_set": bool(IG_VERIFY_TOKEN),
-        "IG_PAGE_ACCESS_TOKEN_set": bool(IG_PAGE_ACCESS_TOKEN),
-        "NOTION_API_KEY_set": bool(NOTION_API_KEY),
-        "NOTION_CTA_PAGE_ID_set": bool(NOTION_CTA_PAGE_ID),
-        "all_env_var_names": sorted(os.environ.keys()),
-    }, 200
-
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     app.run(host="0.0.0.0", port=port)
