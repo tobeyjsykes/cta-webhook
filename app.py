@@ -1,0 +1,130 @@
+"""
+Instagram CTA Auto-Reply Webhook
+---------------------------------
+Listens for Instagram comment webhooks from Meta. When a comment contains
+one of this week's CTA keywords (stored in a Notion page by the weekly
+research digest workflow), sends the commenter a private reply with the
+link to this week's "All Studies" Notion page.
+
+Environment variables required:
+    IG_VERIFY_TOKEN       - any string you choose; must match the value
+                            entered in the Meta App webhook configuration
+    IG_PAGE_ACCESS_TOKEN  - long-lived Instagram/Page access token with
+                            instagram_manage_comments + instagram_business_manage_messages
+    NOTION_API_KEY        - Notion internal integration token
+    NOTION_CTA_PAGE_ID    - page ID of the "CTA Keywords" Notion page
+"""
+
+import os
+import json
+import requests
+from flask import Flask, request
+
+app = Flask(__name__)
+
+IG_VERIFY_TOKEN = os.environ["IG_VERIFY_TOKEN"]
+IG_PAGE_ACCESS_TOKEN = os.environ["IG_PAGE_ACCESS_TOKEN"]
+NOTION_API_KEY = os.environ["NOTION_API_KEY"]
+NOTION_CTA_PAGE_ID = os.environ["NOTION_CTA_PAGE_ID"]
+NOTION_VERSION = "2022-06-28"
+
+GRAPH_API = "https://graph.instagram.com/v21.0"
+
+
+def get_cta_data():
+    """Read {"keywords": [...], "link": "..."} from the CTA Keywords Notion page."""
+    headers = {
+        "Authorization": f"Bearer {NOTION_API_KEY}",
+        "Notion-Version": NOTION_VERSION,
+    }
+    try:
+        r = requests.get(
+            f"https://api.notion.com/v1/blocks/{NOTION_CTA_PAGE_ID}/children",
+            headers=headers,
+            params={"page_size": 10},
+            timeout=15,
+        )
+        r.raise_for_status()
+        for block in r.json().get("results", []):
+            if block.get("type") == "code":
+                text = "".join(
+                    t.get("plain_text", "") for t in block["code"].get("rich_text", [])
+                )
+                return json.loads(text)
+    except Exception as e:
+        print(f"[warn] Failed to read CTA data from Notion: {e}")
+    return {"keywords": [], "link": ""}
+
+
+def send_private_reply(comment_id, link):
+    message = (
+        f"Hey! Here's this week's full study list, like I promised: {link}\n\n"
+        "Thanks for the comment!"
+    )
+    r = requests.post(
+        f"{GRAPH_API}/{comment_id}/private_replies",
+        params={"access_token": IG_PAGE_ACCESS_TOKEN},
+        json={"message": message},
+        timeout=30,
+    )
+    if not r.ok:
+        print(f"[error] private reply failed for comment {comment_id}: "
+              f"{r.status_code} {r.text}")
+    else:
+        print(f"Sent private reply for comment {comment_id}")
+
+
+def handle_comment(comment_id, text):
+    cta = get_cta_data()
+    keywords = [k.lower() for k in cta.get("keywords", [])]
+    link = cta.get("link", "")
+    if not link or not keywords:
+        print("[warn] No active CTA keywords/link configured, skipping.")
+        return
+
+    text_lower = text.lower()
+    if any(keyword in text_lower for keyword in keywords):
+        send_private_reply(comment_id, link)
+
+
+@app.route("/webhook", methods=["GET"])
+def verify_webhook():
+    """Meta calls this once when you configure the webhook subscription."""
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge", "")
+    if mode == "subscribe" and token == IG_VERIFY_TOKEN:
+        return challenge, 200
+    return "Invalid verify token", 403
+
+
+@app.route("/webhook", methods=["POST"])
+def receive_webhook():
+    """Meta calls this every time a subscribed event (e.g. a new comment) occurs."""
+    data = request.get_json(silent=True) or {}
+
+    for entry in data.get("entry", []):
+        for change in entry.get("changes", []):
+            if change.get("field") != "comments":
+                continue
+            value = change.get("value", {})
+            comment_id = value.get("id")
+            text = value.get("text", "")
+            if comment_id and text:
+                try:
+                    handle_comment(comment_id, text)
+                except Exception as e:
+                    print(f"[error] Failed handling comment {comment_id}: {e}")
+
+    # Always return 200 quickly so Meta doesn't retry/disable the subscription
+    return "ok", 200
+
+
+@app.route("/", methods=["GET"])
+def health():
+    return "CTA webhook is running", 200
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8080"))
+    app.run(host="0.0.0.0", port=port)
