@@ -29,6 +29,7 @@ NOTION_CTA_PAGE_ID = os.environ.get("NOTION_CTA_PAGE_ID", "")
 NOTION_VERSION = "2022-06-28"
 
 GRAPH_API = "https://graph.instagram.com/v21.0"
+BEEHIIV_URL = "https://tjs-training.beehiiv.com/"
 
 
 def get_cta_data():
@@ -55,12 +56,12 @@ def get_cta_data():
         print(f"[warn] Failed to read CTA data from Notion: {e}")
     return {"keywords": [], "link": ""}
 
-IG_USER_ID = os.environ.get("IG_USER_ID", "")  # your own IG business account ID
+BEEHIIV_URL = "https://tjs-training.beehiiv.com/"
 
-def send_private_reply(comment_id, link):
+def send_private_reply(comment_id):
     message = (
-        f"Hey! Here's this week's full study list, like I promised: {link}\n\n"
-        "Thanks for the comment!"
+        "Hey, thanks for your comment! You can read the full study and more "
+        f"research breakdowns like it here: {BEEHIIV_URL}"
     )
     r = requests.post(
         f"{GRAPH_API}/{IG_USER_ID}/messages",
@@ -93,14 +94,13 @@ def send_public_reply(comment_id, text="Just sent, check your dms 📩"):
 def handle_comment(comment_id, text):
     cta = get_cta_data()
     keywords = [k.lower() for k in cta.get("keywords", [])]
-    link = cta.get("link", "")
-    if not link or not keywords:
-        print("[warn] No active CTA keywords/link configured, skipping.")
+    if not keywords:
+        print("[warn] No active CTA keywords configured, skipping.")
         return
 
     text_lower = text.lower()
     if any(keyword in text_lower for keyword in keywords):
-        send_private_reply(comment_id, link)
+        send_private_reply(comment_id)
         send_public_reply(comment_id)
 
 
