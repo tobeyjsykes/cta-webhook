@@ -13,7 +13,6 @@ Environment variables required:
                             instagram_manage_comments + instagram_business_manage_messages
     NOTION_API_KEY        - Notion internal integration token
     NOTION_CTA_PAGE_ID    - page ID of the "CTA Keywords" Notion page
-    NOTION_VERSION = "2022-06-28"
 """
 
 import os
@@ -28,6 +27,7 @@ IG_PAGE_ACCESS_TOKEN = os.environ.get("IG_PAGE_ACCESS_TOKEN", "")
 IG_USER_ID = os.environ.get("IG_USER_ID", "")
 NOTION_API_KEY = os.environ.get("NOTION_API_KEY", "")
 NOTION_CTA_PAGE_ID = os.environ.get("NOTION_CTA_PAGE_ID", "")
+NOTION_VERSION = "2022-06-28"
 
 GRAPH_API = "https://graph.instagram.com/v21.0"
 BEEHIIV_URL = "https://tjs-training.beehiiv.com/"
