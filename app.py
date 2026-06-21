@@ -97,7 +97,6 @@ def verify_webhook():
         return challenge, 200
     return "Invalid verify token", 403
 
-
 @app.route("/webhook", methods=["POST"])
 def receive_webhook():
     """Meta calls this every time a subscribed event (e.g. a new comment) occurs."""
@@ -123,6 +122,10 @@ def receive_webhook():
 @app.route("/", methods=["GET"])
 def health():
     return "CTA webhook is running", 200
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
 
 
 @app.route("/debug-env", methods=["GET"])
