@@ -18,7 +18,7 @@ Environment variables required:
 import os
 import json
 import requests
-from flask import Flask, request
+from flask import Flask, request, render_template
 
 app = Flask(__name__)
 
