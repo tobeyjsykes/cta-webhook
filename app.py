@@ -13,6 +13,7 @@ Environment variables required:
                             instagram_manage_comments + instagram_business_manage_messages
     NOTION_API_KEY        - Notion internal integration token
     NOTION_CTA_PAGE_ID    - page ID of the "CTA Keywords" Notion page
+    NOTION_VERSION = "2022-06-28"
 """
 
 import os
