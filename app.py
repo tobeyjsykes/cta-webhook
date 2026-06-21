@@ -77,6 +77,18 @@ def send_private_reply(comment_id, link):
     else:
         print(f"Sent private reply for comment {comment_id}")
 
+def send_public_reply(comment_id, text="Just sent, check your dms 📩"):
+    r = requests.post(
+        f"{GRAPH_API}/{comment_id}/replies",
+        params={"access_token": IG_PAGE_ACCESS_TOKEN},
+        json={"message": text},
+        timeout=30,
+    )
+    if not r.ok:
+        print(f"[error] public reply failed for comment {comment_id}: "
+              f"{r.status_code} {r.text}")
+    else:
+        print(f"Posted public reply for comment {comment_id}")
 
 def handle_comment(comment_id, text):
     cta = get_cta_data()
@@ -89,6 +101,7 @@ def handle_comment(comment_id, text):
     text_lower = text.lower()
     if any(keyword in text_lower for keyword in keywords):
         send_private_reply(comment_id, link)
+        send_public_reply(comment_id)
 
 
 @app.route("/webhook", methods=["GET"])
