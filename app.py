@@ -55,6 +55,7 @@ def get_cta_data():
         print(f"[warn] Failed to read CTA data from Notion: {e}")
     return {"keywords": [], "link": ""}
 
+IG_USER_ID = os.environ.get("IG_USER_ID", "")  # your own IG business account ID
 
 def send_private_reply(comment_id, link):
     message = (
@@ -62,9 +63,12 @@ def send_private_reply(comment_id, link):
         "Thanks for the comment!"
     )
     r = requests.post(
-        f"{GRAPH_API}/{comment_id}/private_replies",
+        f"{GRAPH_API}/{IG_USER_ID}/messages",
         params={"access_token": IG_PAGE_ACCESS_TOKEN},
-        json={"message": message},
+        json={
+            "recipient": {"comment_id": comment_id},
+            "message": {"text": message}
+        },
         timeout=30,
     )
     if not r.ok:
